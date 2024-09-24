@@ -1,0 +1,120 @@
+<html>
+<head>
+    <title>Renomeador de Arquivos</title>
+    <HTA:APPLICATION
+        ID="Renomeador"
+        APPLICATIONNAME="Renomeador de Arquivos"
+        BORDER="thin"
+        CAPTION="yes"
+        SHOWINTASKBAR="yes"
+        SINGLEINSTANCE="yes"
+        SYSMENU="yes"
+        SCROLL="no"
+    />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Garante a altura completa da janela */
+        }
+        h2 {
+            color: #333;
+        }
+        .container {
+            padding: 20px;
+            background-color: white;
+            border: 1px solid #ccc;
+            width: 100%; /* Define uma largura fixa */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        input {
+            width: 100%; /* Ajuste de largura com margem */
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+
+    <script language="VBScript">
+    ' Forçar redimensionamento da janela ao carregar
+    Sub window_onload()
+        ' Redimensionar a janela para 400x300 pixels
+        window.resizeTo 400, 350
+    End Sub
+    </script>
+
+</head>
+<body onload="window_onload()">
+
+<div class="container">
+    <h2>Renomeador de Arquivos</h2>
+    <p>Escolha a pasta e renomeie seus arquivos com um prefixo.</p>
+    
+    <label>Escolha a pasta:</label>
+    <input type="text" id="folderPath" value="C:\Users\Xandy\Desktop\Trabalho\para editar\Stories 03" />
+    <label>Digite o prefixo:</label>
+    <input type="text" id="prefixo" value="Stories" />
+    <button onclick="renomearArquivos()">Renomear Arquivos</button>
+    
+    <p id="status"></p>
+</div>
+
+<script language="VBScript">
+Sub renomearArquivos()
+    Dim pastaAlvo, prefixo, contador, fso, pasta, arquivo, extensao, novoNome
+    
+    ' Obtém valores dos campos de texto
+    pastaAlvo = document.getElementById("folderPath").value
+    prefixo = document.getElementById("prefixo").value
+    
+    ' Inicializa contador
+    contador = 1
+    
+    ' Cria o objeto FileSystemObject para trabalhar com arquivos
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    
+    ' Verifica se a pasta existe
+    If fso.FolderExists(pastaAlvo) Then
+        Set pasta = fso.GetFolder(pastaAlvo)
+        
+        ' Percorre cada arquivo na pasta
+        For Each arquivo In pasta.Files
+            ' Obtém a extensão do arquivo com o ponto
+            extensao = "." & fso.GetExtensionName(arquivo.Path)
+            novoNome = prefixo & contador & extensao
+            arquivo.Name = novoNome
+            contador = contador + 1
+        Next
+        
+        ' Atualiza status de sucesso
+        document.getElementById("status").innerHTML = "Arquivos renomeados com sucesso!"
+    Else
+        document.getElementById("status").innerHTML = "A pasta não foi encontrada."
+    End If
+    
+    ' Limpa objetos
+    Set fso = Nothing
+    Set pasta = Nothing
+End Sub
+
+</script>
+
+</body>
+</html>
