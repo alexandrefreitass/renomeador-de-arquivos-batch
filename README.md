@@ -1,7 +1,7 @@
 ## Renomeador de Arquivos - Script Batch
 
 <div align="center">
-    <img src="https://github.com/user-attachments/assets/320f6030-66de-4447-8446-d90d2b9b75db" />
+    <img src="https://github.com/user-attachments/assets/ab45cd05-a039-4340-a55d-4c20ab251992" />
 </div>
 <br/><br/>
 Este projeto consiste em um script desenvolvido em VBS para automatizar o processo de renomeação de arquivos em uma pasta específica. Com essa ferramenta, é possível aplicar um prefixo personalizado aos arquivos, facilitando a organização de grandes volumes de arquivos.
