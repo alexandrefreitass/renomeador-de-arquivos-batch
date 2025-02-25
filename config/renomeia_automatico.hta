@@ -11,7 +11,7 @@
         SINGLEINSTANCE="yes"
         SYSMENU="yes"
         SCROLL="no"
-        ICON="icon-renomear.ico" <!-- Substitua com o caminho do seu ícone -->
+        ICON="icon-renomear.ico"
     />
     <style>
         body {
@@ -53,14 +53,11 @@
             background-color: #45a049;
         }
     </style>
-
     <script language="VBScript">
-    ' Forçar redimensionamento da janela ao carregar
     Sub window_onload()
         window.resizeTo 400, 550
     End Sub
     </script>
-
 </head>
 <body onload="window_onload()">
 
@@ -70,8 +67,9 @@
     
     <label>Escolha a pasta:</label>
     <input type="text" id="folderPath" value="C:\Users\Xandy\Desktop\exemplo" />
+    
     <label>Digite o prefixo:</label>
-    <input type="text" id="prefixo" value="exemploNome" />
+    <input type="text" id="prefixo" value="carrossel" />
     
     <label>Posição do contador:</label>
     <select id="posicaoContador">
@@ -92,68 +90,169 @@
 
 <script language="VBScript">
 Sub renomearArquivosEPastas()
-    Dim pastaAlvo, prefixo, contador, fso, pasta, arquivo, subpasta, extensao, novoNome, posicaoContador, opcaoRenomear
+    Dim pastaAlvo, prefixo, contador
+    Dim fso, pasta
+    Dim opcaoRenomear, posicaoContador
     
-    ' Obtém valores dos campos de texto e das seleções
     pastaAlvo = document.getElementById("folderPath").value
     prefixo = document.getElementById("prefixo").value
     posicaoContador = document.getElementById("posicaoContador").value
     opcaoRenomear = document.getElementById("opcaoRenomear").value
     
-    ' Inicializa contador
     contador = 1
     
-    ' Cria o objeto FileSystemObject para trabalhar com arquivos e pastas
     Set fso = CreateObject("Scripting.FileSystemObject")
     
-    ' Verifica se a pasta existe
     If fso.FolderExists(pastaAlvo) Then
         Set pasta = fso.GetFolder(pastaAlvo)
         
-        ' Renomeia Arquivos se a opção for "arquivos"
         If opcaoRenomear = "arquivos" Then
-            For Each arquivo In pasta.Files
-                ' Obtém a extensão do arquivo com o ponto
-                extensao = "." & fso.GetExtensionName(arquivo.Path)
-                
-                ' Define o novo nome com base na posição escolhida
-                If posicaoContador = "antes" Then
-                    novoNome = contador & prefixo & extensao
-                Else
-                    novoNome = prefixo & contador & extensao
-                End If
-                
-                ' Renomeia o arquivo
-                arquivo.Name = novoNome
-                contador = contador + 1
-            Next
+            Call RenomearArquivos(pasta, prefixo, posicaoContador, contador, fso)
+        ElseIf opcaoRenomear = "pastas" Then
+            Call RenomearPastas(pasta, prefixo, posicaoContador, contador, fso)
         End If
         
-        ' Renomeia Pastas se a opção for "pastas"
-        If opcaoRenomear = "pastas" Then
-            For Each subpasta In pasta.SubFolders
-                ' Define o novo nome com base na posição escolhida
-                If posicaoContador = "antes" Then
-                    novoNome = contador & prefixo
-                Else
-                    novoNome = prefixo & contador
-                End If
-                
-                ' Renomeia a subpasta
-                subpasta.Name = novoNome
-                contador = contador + 1
-            Next
-        End If
-        
-        ' Atualiza status de sucesso
         document.getElementById("status").innerHTML = "Renomeação concluída com sucesso!"
     Else
         document.getElementById("status").innerHTML = "A pasta não foi encontrada."
     End If
-    
-    ' Limpa objetos
-    Set fso = Nothing
+
     Set pasta = Nothing
+    Set fso = Nothing
+End Sub
+
+'------------------------------------------
+' FUNÇÃO PARA RENOMEAR ARQUIVOS
+'------------------------------------------
+Function RenomearArquivos(pasta, prefixo, posicao, contador, fso)
+    Dim arquivo, extensao, novoNome
+    Dim total, i
+    Dim arqPaths()
+
+    total = pasta.Files.Count
+    If total = 0 Then Exit Function
+
+    ' Array 2D: cada linha terá [numeroExtraido, caminhoCompleto]
+    ReDim arqPaths(total - 1, 1)
+
+    ' 1) COLETAMOS OS ARQUIVOS E SEU NÚMERO
+    i = 0
+    For Each arquivo In pasta.Files
+        arqPaths(i, 0) = ExtrairNumero(fso.GetBaseName(arquivo.Name))  ' pega só o "nome sem extensao"
+        arqPaths(i, 1) = arquivo.Path
+        i = i + 1
+    Next
+
+    ' 2) ORDENAMOS PELO NÚMERO ARMAZENADO EM arqPaths(i, 0)
+    Call BubbleSortFileInfos(arqPaths)
+
+    ' 3) RENOMEAMOS NA ORDEM
+    For i = 0 To UBound(arqPaths)
+        Dim fileObj
+        Set fileObj = fso.GetFile(arqPaths(i, 1))
+
+        ' descobrir a extensao
+        If fso.GetExtensionName(fileObj.Path) <> "" Then
+            extensao = "." & fso.GetExtensionName(fileObj.Path)
+        Else
+            extensao = ""
+        End If
+
+        If posicao = "antes" Then
+            novoNome = contador & prefixo & extensao
+        Else
+            novoNome = prefixo & contador & extensao
+        End If
+
+        fileObj.Name = novoNome
+        contador = contador + 1
+
+        Set fileObj = Nothing
+    Next
+End Function
+
+'------------------------------------------
+' FUNÇÃO PARA RENOMEAR PASTAS
+'------------------------------------------
+Function RenomearPastas(pasta, prefixo, posicao, contador, fso)
+    Dim subpasta, novoNome
+    Dim total, i
+    Dim folderPaths()
+
+    total = pasta.SubFolders.Count
+    If total = 0 Then Exit Function
+
+    ' Array 2D: cada linha terá [numeroExtraido, caminhoCompleto]
+    ReDim folderPaths(total - 1, 1)
+
+    ' 1) COLETAMOS AS SUBPASTAS E SEU NÚMERO
+    i = 0
+    For Each subpasta In pasta.SubFolders
+        folderPaths(i, 0) = ExtrairNumero(subpasta.Name)
+        folderPaths(i, 1) = subpasta.Path
+        i = i + 1
+    Next
+
+    ' 2) ORDENAMOS PELO NÚMERO
+    Call BubbleSortFileInfos(folderPaths)
+
+    ' 3) RENOMEAMOS NA ORDEM
+    For i = 0 To UBound(folderPaths)
+        Set subpasta = fso.GetFolder(folderPaths(i, 1))
+
+        If posicao = "antes" Then
+            novoNome = contador & prefixo
+        Else
+            novoNome = prefixo & contador
+        End If
+
+        subpasta.Name = novoNome
+        contador = contador + 1
+    Next
+End Function
+
+'------------------------------------------
+' FUNÇÃO PARA EXTRAIR O PRIMEIRO NÚMERO
+' Encontrado no nome do arquivo/pasta
+'------------------------------------------
+Function ExtrairNumero(ByVal s)
+    Dim regEx, matches
+    Set regEx = New RegExp
+    regEx.Pattern = "\d+"
+    regEx.Global = True
+
+    If regEx.Test(s) Then
+        ' Pega a primeira ocorrência de dígitos
+        ExtrairNumero = CLng(regEx.Execute(s)(0))
+    Else
+        ' Se não tiver número, retorna 0 (ou outro valor que preferir)
+        ExtrairNumero = 0
+    End If
+End Function
+
+'------------------------------------------
+' FUNÇÃO DE ORDENACAO (BUBBLE SORT) 
+' Ordena arqPaths(i, 0) em ordem crescente
+'------------------------------------------
+Sub BubbleSortFileInfos(ByRef arr)
+    Dim i, j
+    Dim tempNum, tempPath
+
+    For i = 0 To UBound(arr)
+        For j = 0 To (UBound(arr) - 1)
+            If arr(j, 0) > arr(j + 1, 0) Then
+                ' Troca as posições
+                tempNum      = arr(j, 0)
+                tempPath     = arr(j, 1)
+
+                arr(j, 0)    = arr(j + 1, 0)
+                arr(j, 1)    = arr(j + 1, 1)
+                
+                arr(j + 1, 0) = tempNum
+                arr(j + 1, 1) = tempPath
+            End If
+        Next
+    Next
 End Sub
 
 </script>
